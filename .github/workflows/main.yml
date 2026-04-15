@@ -1,0 +1,74 @@
+name: 'CI/CD'
+
+on:
+  workflow_dispatch: { }
+
+  push:
+    branches: [ 'main' ]
+
+  pull_request:
+    branches: [ 'main' ]
+
+jobs:
+  config:
+    runs-on: 'ubuntu-24.04'
+    permissions: { }
+    outputs:
+      linux-runner-image: ${{ steps.constants.outputs.linux-runner-image }}
+      linux-compiler: ${{ steps.constants.outputs.linux-compiler }}
+      linux-conan-profile-template: ${{ steps.constants.outputs.linux-conan-profile-template }}
+
+      macos-runner-image: ${{ steps.constants.outputs.macos-runner-image }}
+      macos-compiler: ${{ steps.constants.outputs.macos-compiler }}
+      macos-conan-profile-template: ${{ steps.constants.outputs.macos-conan-profile-template }}
+
+      conan-preset: ${{ steps.constants.outputs.conan-preset }}
+      action-type: ${{ steps.constant.outputs.action-type }}
+    steps:
+      - name: 'Define constants'
+        id: 'constants'
+        run: |
+          CONAN_PROFILE_SUFFIX=${{ github.event_name == 'push' && 'static' || 'debug' }}
+          
+          echo "linux-runner-image=ubuntu-24.04" >> $GITHUB_OUTPUT
+          echo "linux-compiler=llvm-21" >> $GITHUB_OUTPUT
+          echo "linux-conan-profile=linux-x86_64-${CONAN_PROFILE_SUFFIX}" >> $GITHUB_OUTPUT
+          
+          echo "macos-runner-image=macos-26" >> $GITHUB_OUTPUT
+          echo "macos-compiler=apple-clang-17" >> $GITHUB_OUTPUT
+          echo "macos-conan-profile=macos-arm64-${CONAN_PROFILE_SUFFIX}" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "conan-preset=conan-release" >> $GITHUB_OUTPUT
+            echo "action-type=Release" >> $GITHUB_OUTPUT
+          else
+            echo "conan-preset=conan-debug" >> $GITHUB_OUTPUT
+            echo "action-type=Debug" >> $GITHUB_OUTPUT
+          fi
+
+  lint-commits:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions:
+      contents: 'read'
+    needs: [ 'config' ]
+    steps:
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup node'
+        uses: 'actions/setup-node@v6'
+        with:
+          node-version: 'lts/*'
+
+      - name: 'Install commitlint'
+        run: npm install -D @commitlint/cli @commitlint/config-conventional
+
+      - name: 'Validate commits'
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            npx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
+          else
+            npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} -- verbose
+          fi

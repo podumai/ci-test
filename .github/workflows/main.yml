@@ -16,11 +16,11 @@ jobs:
     outputs:
       linux-runner-image: ${{ steps.constants.outputs.linux-runner-image }}
       linux-compiler: ${{ steps.constants.outputs.linux-compiler }}
-      linux-conan-profile-template: ${{ steps.constants.outputs.linux-conan-profile-template }}
+      linux-conan-profile: ${{ steps.constants.outputs.linux-conan-profile }}
 
       macos-runner-image: ${{ steps.constants.outputs.macos-runner-image }}
       macos-compiler: ${{ steps.constants.outputs.macos-compiler }}
-      macos-conan-profile-template: ${{ steps.constants.outputs.macos-conan-profile-template }}
+      macos-conan-profile: ${{ steps.constants.outputs.macos-conan-profile }}
 
       conan-preset: ${{ steps.constants.outputs.conan-preset }}
       action-type: ${{ steps.constant.outputs.action-type }}

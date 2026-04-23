@@ -9,9 +9,12 @@ on:
   pull_request:
     branches: [ 'main' ]
 
+env:
+  LINUX_RUNNER_IMAGE: 'ubuntu-24.04'
+
 jobs:
   config:
-    runs-on: 'ubuntu-24.04'
+    runs-on: ${{ env.LINUX_RUNNER_IMAGE }}
     permissions: { }
     outputs:
       linux-runner-image: ${{ steps.constants.outputs.linux-runner-image }}

@@ -205,3 +205,33 @@ jobs:
         with:
           name: release-assets-${{ github.run_id }}
           path: ./*.tar.gz
+
+  release:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions:
+      contents: 'write'
+    needs: [ 'config', 'archive' ]
+    steps:
+      - name: 'Clone repository'
+        uses: 'actions/checkout@v6'
+        with:
+          fetch-depth: 0
+
+      - name: 'Bump version and push tag'
+        id: 'bump-version'
+        uses: 'mathieudutour/github-tag-action@v6.2'
+        with:
+          github_token: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: 'Download archived release executables'
+        uses: 'actions/download-artifact@v8'
+        with:
+          name: 'release-assets-${{ github.run_id }}'
+
+      - name: 'Create GitHub release'
+        uses: 'ncipollo/release-action@v1'
+        with:
+          tag: '${{ steps.bump-version.outputs.new_tag }}'
+          name: 'Release ${{ steps.bump-version.outputs.new_tag }}'
+          body: '${{ steps.bump-version.outputs.changelog }}'
+          artifacts: './*.tar.gz'

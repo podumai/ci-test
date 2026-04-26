@@ -175,3 +175,33 @@ jobs:
 
       - name: 'Run tests'
         run: ctest --preset ${{ needs.config.outputs.conan-preset }}
+
+  archive:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions: { }
+    needs: [ 'config', 'test' ]
+    if: github.event_name == 'push'
+    steps:
+      - name: 'Download build artifacts'
+        uses: 'actions/download-artifact@v8'
+        with:
+          path: 'artifacts'
+          pattern: build-archive-*
+
+      - name: 'Prepare Linux assets'
+        run: |
+          mkdir -p Linux
+          tar -xzf artifacts/build-archive-Linux-${{ github.run_id }}/build-archive-*.tar.gz -C Linux
+          tar -czf linux-x86_64.tar.gz -C Linux/build/Release/helloworld_cli
+
+      - name: 'Prepare macOS assets'
+        run: |
+          mkdir -p macOS
+          tar -xzf artifacts/build-archive-macOS-${{ github.run_id }}/build-archive-*.tar.gz -C macOS
+          tar -czf macos-arm64.tar.gz -C macOS/build/Release/helloworld_cli
+
+      - name: 'Upload release artifacts'
+        uses: 'actions/upload-artifact@v7'
+        with:
+          name: release-assets-${{ github.run_id }}
+          path: ./*.tar.gz

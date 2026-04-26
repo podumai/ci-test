@@ -100,7 +100,7 @@ jobs:
           conan: true
 
       - name: 'Install project dependencies'
-        run: conan install . --build=missing --profile:all=${{ matrix.conan-profile }}
+        run: conan install . --build=missing --profile:all=profiles/${{ matrix.conan-profile }}
 
       - name: 'Configure project'
         run: |
